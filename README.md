@@ -1,90 +1,151 @@
-# CRUD de Indicadores (Java + Spring Boot)
+<div align="center">
 
-Sistema web para **lançamento e gestão de indicadores operacionais**. Os dados ficam no **PostgreSQL** e alimentam painéis no **Grafana**. A interface é pensada para **uso em computadores** (menu lateral, formulário e tabela lado a lado).
+# Painel de Indicadores
 
-Documentação complementar:
+**CRUD web para lançamento operacional de dados · PostgreSQL · Grafana**
 
-- [Instalação rápida (clone / outra máquina)](docs/INSTALACAO.md)
-- [Arquitetura](docs/ARQUITETURA.md)
+Interface pensada para **desktop**: formulários configuráveis, fórmulas automáticas e integração direta com painéis.
+
+<br>
+
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+
+<br>
+
+[Início rápido](#-início-rápido) ·
+[Funcionalidades](#-funcionalidades) ·
+[Instalação completa](#-instalação-em-outra-máquina) ·
+[Grafana](#-integração-com-grafana) ·
+[Problemas comuns](#-solução-de-problemas) ·
+[Documentação extra](docs/)
+
+</div>
 
 ---
 
-## Início rápido (GitHub + Docker)
+## Sumário
+
+- [Início rápido](#-início-rápido)
+- [O que é este projeto](#-o-que-é-este-projeto)
+- [Arquitetura](#-arquitetura)
+- [Requisitos](#-requisitos)
+- [Instalação em outra máquina](#-instalação-em-outra-máquina)
+- [Uso no dia a dia](#-uso-no-dia-a-dia)
+- [Integração com Grafana](#-integração-com-grafana)
+- [Criar formulários e fórmulas](#-criar-formulários-e-fórmulas)
+- [Desenvolvimento local](#-desenvolvimento-local)
+- [Solução de problemas](#-solução-de-problemas)
+- [Estrutura do repositório](#-estrutura-do-repositório)
+- [Segurança](#-segurança)
+
+---
+
+## Início rápido
 
 ```powershell
 git clone https://github.com/BezerraPH/WEB_CRUD---Java_SpringBoot-PostgreSQL-Docker.git
 cd WEB_CRUD---Java_SpringBoot-PostgreSQL-Docker
 copy .env.example .env
-# Edite .env e defina POSTGRES_PASSWORD
+notepad .env
 docker compose up -d --build
 ```
 
-Acesse **http://localhost:8080** (Adminer: **http://localhost:8081**).
+| Serviço | URL | Descrição |
+|:--------|:----|:----------|
+| **Aplicação** | http://localhost:8080 | Lançamento e gestão de dados |
+| **Adminer** | http://localhost:8081 | Consulta SQL no navegador |
 
-> **Segurança:** o arquivo `.env` não vai para o Git. Use senha forte e restrinja o acesso na rede.
+> [!IMPORTANT]
+> O arquivo `.env` **não** é versionado. Defina uma senha forte em `POSTGRES_PASSWORD` antes de subir os containers.
 
----
-
-## Índice
-
-1. [O que o sistema faz](#o-que-o-sistema-faz)
-2. [Requisitos](#requisitos)
-3. [Tutorial: replicar em outro computador](#tutorial-replicar-em-outro-computador)
-4. [Tutorial: operar no dia a dia](#tutorial-operar-no-dia-a-dia)
-5. [Integração com Grafana](#integração-com-grafana)
-6. [Criar indicador sem programar](#criar-indicador-sem-programar)
-7. [Módulos avançados (YAML / PCE)](#módulos-avançados-yaml--pce)
-8. [Desenvolvimento local](#desenvolvimento-local)
-9. [Manutenção e problemas comuns](#manutenção-e-problemas-comuns)
-10. [Estrutura do projeto](#estrutura-do-projeto)
+Guia detalhado: **[docs/INSTALACAO.md](docs/INSTALACAO.md)**
 
 ---
 
-## O que o sistema faz
+## O que é este projeto
 
-| Função | Descrição |
-|--------|-----------|
-| Lançamento | Preencher formulários e gravar registros no PostgreSQL |
-| Listagem | Ver, editar e excluir lançamentos na mesma tela |
-| Construtor | Criar novos indicadores pela interface (nova tabela + metadados) |
-| Grafana | Consulta SQL direta nas tabelas — sem API intermediária |
-| Sem login | Acesso por link na rede; restrinja por firewall se necessário |
+Sistema para **registrar indicadores operacionais** em formulários web. Os dados ficam no **PostgreSQL** e são consumidos pelo **Grafana** via SQL — sem API intermediária e sem exportar planilhas.
 
-**Regra de dados:** a única chave única é `id`. Várias entradas no **mesmo dia** são permitidas.
+| Recurso | Descrição |
+|:--------|:----------|
+| Lançamento | Preencher formulários e gravar no banco |
+| Listagem | Ver, editar e excluir registros na mesma tela |
+| Construtor | Criar novos indicadores pela interface (tabela + campos) |
+| Fórmulas | Cálculos automáticos com `+`, `-`, `*`, `/` por formulário |
+| Grafana | Leitura direta das tabelas PostgreSQL |
+
+> [!NOTE]
+> **Regra de dados:** a chave única é `id`. Várias entradas no **mesmo dia** são permitidas (use `SUM()` no Grafana para acumular).
+
+---
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    subgraph Operacao["Operação"]
+        U[Operador]
+        W[Aplicação Web<br/>:8080]
+    end
+    subgraph Dados["Dados"]
+        P[(PostgreSQL<br/>:5432)]
+    end
+    subgraph BI["Painéis"]
+        G[Grafana]
+    end
+    U --> W
+    W --> P
+    G --> P
+```
+
+| Camada | Tecnologia |
+|:-------|:-----------|
+| Backend | Java 17 · Spring Boot 3 |
+| Interface | Thymeleaf · Bootstrap 5 · CSS customizado |
+| Banco | PostgreSQL 16 |
+| Deploy | Docker Compose (app + banco + Adminer) |
+
+Detalhes técnicos: **[docs/ARQUITETURA.md](docs/ARQUITETURA.md)**
 
 ---
 
 ## Requisitos
 
-| Item | Versão sugerida |
-|------|-----------------|
-| Docker Desktop | Com Compose v2 |
-| Portas livres | `8080` (app), `8081` (Adminer), `5432` (PostgreSQL) |
-| Rede | Máquinas do Grafana e operadores devem alcançar o IP do servidor |
+| Item | Observação |
+|:-----|:-----------|
+| **Docker Desktop** | Com Compose v2 |
+| **Portas livres** | `8080` (app) · `8081` (Adminer) · `5432` (PostgreSQL) |
+| **Rede** | Grafana e operadores devem alcançar o IP do servidor |
 
 ---
 
-## Tutorial: replicar em outro computador
+## Instalação em outra máquina
 
-### Passo 1 — Obter o projeto
+<details>
+<summary><strong>Passo a passo completo (clique para expandir)</strong></summary>
 
-**Git (recomendado):**
+<br>
+
+### 1 · Obter o código
 
 ```powershell
 git clone https://github.com/BezerraPH/WEB_CRUD---Java_SpringBoot-PostgreSQL-Docker.git
 cd WEB_CRUD---Java_SpringBoot-PostgreSQL-Docker
 ```
 
-Ou copie a pasta do projeto (pendrive/rede) para o servidor.
+Também é possível copiar a pasta do projeto por pendrive ou rede interna.
 
-### Passo 2 — Configurar variáveis de ambiente
+### 2 · Variáveis de ambiente
 
 ```powershell
 copy .env.example .env
 notepad .env
 ```
 
-Exemplo de `.env` (use sua própria senha):
+Exemplo de `.env`:
 
 ```env
 POSTGRES_DB=indicadores
@@ -96,120 +157,119 @@ APP_PORT=8080
 ADMINER_PORT=8081
 ```
 
-- Em **Docker**, `POSTGRES_HOST` deve ser `postgres` (nome do serviço no Compose).
-- Em **desenvolvimento local** (Maven sem Docker), use `POSTGRES_HOST=localhost`.
+| Ambiente | `POSTGRES_HOST` |
+|:---------|:----------------|
+| Docker Compose | `postgres` (nome do serviço) |
+| Maven local | `localhost` |
 
-### Passo 3 — Subir os containers
+### 3 · Subir os containers
 
 ```powershell
 docker compose up -d --build
-```
-
-Aguarde os três serviços ficarem saudáveis:
-
-```powershell
 docker compose ps
 ```
 
-### Passo 4 — Validar o acesso
+Aguarde `postgres`, `indicadores-app` e `adminer` ficarem saudáveis.
 
-| Serviço | URL local | Uso |
-|---------|-----------|-----|
-| **Aplicação** | http://localhost:8080 | Operadores lançam dados |
-| **Adminer** | http://localhost:8081 | Consulta SQL manual |
+### 4 · Validar
 
-Na rede interna, substitua `localhost` pelo IP do servidor (ex.: `http://10.47.22.57:8080`).
+- App: `http://localhost:8080` (ou `http://IP_DO_SERVIDOR:8080`)
+- Adminer: `http://localhost:8081`
 
-### Passo 5 — Adminer (primeira vez)
-
-1. Abra http://IP:8081  
-2. Sistema: **PostgreSQL**  
-3. Servidor: `postgres`  
-4. Usuário: `postgres`  
-5. Senha: valor de `POSTGRES_PASSWORD` no `.env`  
-6. Banco: `indicadores`
-
-### Passo 6 — Grafana (outro servidor)
-
-No Grafana, crie fonte de dados **PostgreSQL**:
+### 5 · Adminer (primeira conexão)
 
 | Campo | Valor |
-|-------|-------|
-| Host | IP da máquina onde roda o Docker |
+|:------|:------|
+| Sistema | PostgreSQL |
+| Servidor | `postgres` |
+| Usuário | `postgres` |
+| Senha | valor de `POSTGRES_PASSWORD` no `.env` |
+| Banco | `indicadores` |
+
+### 6 · Grafana (servidor separado)
+
+Crie uma fonte de dados **PostgreSQL**:
+
+| Campo | Valor |
+|:------|:------|
+| Host | IP da máquina Docker |
 | Port | `5432` |
 | Database | `indicadores` |
 | User / Password | `postgres` / senha do `.env` |
 | SSL | Desligado (rede interna) |
 
-Teste com: `SELECT COUNT(*) FROM dados_indicadores;`
+Teste: `SELECT COUNT(*) FROM dados_indicadores;`
 
-### Passo 7 — Compartilhar com a equipe
+### 7 · Compartilhar com a equipe
 
-Envie o link `http://IP:8080` apenas para pessoas autorizadas. Não há tela de login.
+Envie `http://IP:8080` apenas para pessoas autorizadas. **Não há tela de login.**
+
+</details>
 
 ---
 
-## Tutorial: operar no dia a dia
+## Uso no dia a dia
 
-### Tela inicial (`/`)
+### Tela inicial
 
-Duas opções:
-
-1. **Acessar formulários** — lista todos os indicadores  
-2. **Criar formulário novo** — construtor visual
+| Ação | Caminho |
+|:-----|:--------|
+| Ver todos os formulários | `/formularios` |
+| Criar novo indicador | `/formularios/novo` |
 
 ### Lançar dados
 
-1. Menu lateral ou lista → escolha o indicador (ex.: SISGCORP, PCE, PAS)  
-2. URL: `/m/{slug}`  
-3. Preencha os campos (um abaixo do outro)  
-4. Clique em **Gravar lançamento**  
-5. O registro aparece na tabela à direita (em telas largas)
+1. Escolha o formulário (ex.: SISGCORP, PCE).
+2. Acesse `/m/{slug}` — ex.: `/m/dados_indicadores`.
+3. Preencha os campos e clique em **Gravar lançamento**.
+4. O registro aparece na tabela (layout lado a lado em telas largas).
 
-### Editar ou excluir um lançamento
+### Editar ou excluir
 
-Na tabela de registros:
-
-- **Editar** — carrega os valores no formulário à esquerda  
-- **Excluir** — pede confirmação antes de remover
+Na tabela de registros: **Editar** carrega o formulário; **Excluir** pede confirmação.
 
 ### Gerenciar formulários
 
-1. **Formulários** no cabeçalho ou `/formularios`  
-2. Em cada item: **Preencher**, **Fórmulas**, **Editar** e **Excluir**  
-3. Formulários iniciais em `modulos.yml` são importados ao banco na subida; depois são geridos pela interface
+Em `/formularios`, cada item oferece:
 
-### Atalhos úteis
+| Botão | Função |
+|:------|:-------|
+| **Preencher** | Lançar dados |
+| **Fórmulas** | Configurar cálculos automáticos |
+| **Editar** | Título, descrição e novos campos |
+| **Excluir** | Remove formulário e tabela (irreversível) |
+
+### Atalhos de URL
 
 | URL | Função |
-|-----|--------|
+|:----|:-------|
 | `/` | Início |
 | `/formularios` | Lista de formulários |
-| `/formularios/novo` | Criar indicador |
-| `/m/sisgcorp` | Lançamento SISGCORP |
-| `/m/pce` | Lançamento PCE |
+| `/formularios/novo` | Construtor |
+| `/m/dados_indicadores` | Indicadores SISGCORP |
+| `/m/pce_controle_destruicao` | Controle PCE para destruição |
+| `/formularios/calculos/{slug}` | Editor de fórmulas |
 
-URLs antigas (`/admin/...`, `/painel`) redirecionam automaticamente.
+Rotas antigas (`/admin/...`, `/painel`) redirecionam automaticamente.
 
 ---
 
 ## Integração com Grafana
 
-### Princípio
+O Grafana consulta **diretamente** as tabelas do banco `indicadores`.
 
-O Grafana lê **diretamente** as tabelas do banco `indicadores`. Não é necessário exportar CSV.
+### Exemplos de SQL
 
-### Exemplos de consulta
-
-**Último registro SISGCORP:**
+**Último registro SISGCORP**
 
 ```sql
-SELECT * FROM dados_indicadores
+SELECT *
+FROM dados_indicadores
 ORDER BY data_coleta DESC, id DESC
 LIMIT 1;
 ```
 
-**Soma de recebimentos PCE no período:**
+**Soma de armas recebidas (PCE) no período**
 
 ```sql
 SELECT SUM(pcerec_armas) AS total_armas
@@ -217,7 +277,7 @@ FROM pce_controle_destruicao
 WHERE infog_data BETWEEN '2026-01-01' AND '2026-12-31';
 ```
 
-**Último saldo PCE:**
+**Último saldo de armas (PCE)**
 
 ```sql
 SELECT saldoatualdearmas
@@ -228,38 +288,40 @@ LIMIT 1;
 
 ### Campo Nº TRAM (PCE)
 
-- Rótulo na tela: **Nº TRAM** (sigla, não “trâmite”)  
-- Coluna no banco: `infog_nrtram`
+| Na tela | No banco |
+|:--------|:---------|
+| **Nº TRAM** | `infog_nrtram` |
 
 ---
 
-## Criar indicador sem programar
+## Criar formulários e fórmulas
 
-1. Início → **Criar formulário novo** (ou `/formularios/novo`)  
-2. Informe **título** e, se quiser, **identificador (slug)** e **nome da tabela**  
+### Novo indicador (sem código)
+
+1. **Criar formulário novo** em `/formularios/novo`.
+2. Informe título e, opcionalmente, slug e nome da tabela.
 3. Adicione campos:
-   - **Data** — obrigatório pelo menos um (ordenação e Grafana)  
-   - **Número** — valores quantitativos  
-   - **Texto** — observações curtas  
-4. **Criar formulário**
+   - **Data** — pelo menos um (ordenação e Grafana).
+   - **Número** — valores quantitativos.
+   - **Texto** — observações curtas.
+4. Confirme a criação.
 
-O sistema:
+O sistema cria a tabela no PostgreSQL, registra metadados e libera `/m/{slug}`.
 
-- Cria a tabela física no PostgreSQL  
-- Registra metadados em `formulario_def`, `formulario_grupo`, `formulario_campo`  
-- Exibe o formulário em `/m/{slug}` e no menu lateral  
+Para **novos campos depois**: `/formularios/{slug}/editar`.
 
-Para **novo campo** depois: `/formularios/{slug}/editar` → adicionar campo.
+### Fórmulas automáticas
 
----
+Qualquer formulário pode ter regras em **Fórmulas** (`/formularios/calculos/{slug}`):
 
-## Fórmulas e módulos iniciais (YAML)
+- Operadores: `+`, `-`, `*`, `/` e parênteses.
+- Referência por **nome do campo** (ex.: `pcerec_armas + saldoanosanteriorarmas`).
+- Ative ou desative cálculos e regras individuais.
 
-Qualquer formulário pode ter **fórmulas** (`+`, `-`, `*`, `/`) pela tela **Fórmulas** em `/formularios/calculos/{slug}`.
+Formulários iniciais vêm de `indicadores-crud/src/main/resources/modulos.yml` e são importados ao banco na primeira subida. Depois, tudo é gerido pela interface.
 
-Formulários pré-configurados ficam em `indicadores-crud/src/main/resources/modulos.yml` e são **importados para o banco** na subida da aplicação. Depois disso, edite/exclua/fórmulas pela interface.
-
-O **PCE** traz fórmulas padrão de saldo; use **Restaurar fórmulas padrão PCE** se precisar voltar ao original.
+> [!TIP]
+> No módulo **PCE**, use **Restaurar fórmulas padrão PCE** para voltar aos saldos calculados originais.
 
 ---
 
@@ -281,98 +343,119 @@ Acesse http://localhost:8080
 
 ---
 
-## Manutenção e problemas comuns
+## Solução de problemas
 
-### Ver logs da aplicação
+<details>
+<summary><strong>Ver logs da aplicação</strong></summary>
 
 ```powershell
 docker compose logs -f indicadores-app
 ```
 
-### Reiniciar só a aplicação
+</details>
+
+<details>
+<summary><strong>Reiniciar só a aplicação</strong></summary>
 
 ```powershell
 docker compose restart indicadores-app
 ```
 
-### Reset completo do banco (apaga todos os dados)
+</details>
+
+<details>
+<summary><strong>Reset completo do banco (apaga todos os dados)</strong></summary>
 
 ```powershell
 docker compose down -v
 docker compose up -d --build
 ```
 
-Recria tabelas a partir de `sql/schema.sql`. Formulários dinâmicos criados pela interface serão perdidos.
+Recria tabelas a partir de `sql/schema.sql`. Formulários criados pela interface serão perdidos.
 
-### Erro “formulario_def não existe”
+</details>
 
-Na primeira subida, o app executa `db/02-formularios-meta.sql` automaticamente. Se persistir, verifique logs e permissões do usuário `postgres`.
+<details>
+<summary><strong>Erro: <code>formulario_def</code> não existe</strong></summary>
 
-### Porta 8080 em uso
+Na primeira subida, o app executa os scripts em `indicadores-crud/src/main/resources/db/`. Se persistir, verifique logs e permissões do usuário `postgres`.
 
-Altere `APP_PORT` no `.env` (ex.: `8082`) e suba de novo.
+</details>
 
-### `password authentication failed for user "postgres"`
+<details>
+<summary><strong>Porta 8080 em uso</strong></summary>
 
-A senha no `.env` não bate com a senha gravada no **volume** do PostgreSQL (criado na primeira subida). O container Postgres ignora `POSTGRES_PASSWORD` depois que o volume já existe.
+Altere `APP_PORT` no `.env` (ex.: `8082`) e execute `docker compose up -d` novamente.
 
-**Opção A — alinhar senha sem apagar dados** (no PowerShell, use a senha do seu `.env`):
+</details>
+
+<details>
+<summary><strong><code>password authentication failed for user "postgres"</code></strong></summary>
+
+A senha no `.env` não coincide com a gravada no **volume** do PostgreSQL (criado na primeira subida).
+
+**Opção A — alinhar senha sem apagar dados** (substitua pela senha do seu `.env`):
 
 ```powershell
-docker exec indicadores-postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'admin_654';"
+docker exec indicadores-postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'sua_senha_segura';"
 docker restart indicadores-crud
 ```
 
-**Opção B — recriar tudo do zero** (apaga todos os lançamentos):
+**Opção B — recriar tudo do zero**
 
 ```powershell
 docker compose down -v
 docker compose up -d --build
 ```
 
-Confirme no Adminer (http://localhost:8081) com a mesma senha do `.env` antes de reiniciar a app.
+Confirme a conexão no Adminer antes de reiniciar a app.
+
+</details>
 
 ---
 
-## Estrutura do projeto
+## Estrutura do repositório
 
 ```
 .
-├── docker-compose.yml      # PostgreSQL + app + Adminer
-├── .env.example            # Modelo de variáveis (copiar para .env)
-├── .gitignore              # Não versiona .env, target/, Legislação/, etc.
-├── sql/schema.sql          # Tabelas iniciais (SISGCORP, PCE)
+├── docker-compose.yml          # PostgreSQL + app + Adminer
+├── .env.example                # Modelo (copiar para .env)
+├── sql/
+│   └── schema.sql              # Tabelas iniciais (SISGCORP, PCE)
 ├── docs/
-│   ├── INSTALACAO.md       # Clone e Docker em outra máquina
-│   └── ARQUITETURA.md
-└── indicadores-crud/       # Spring Boot
-    ├── src/main/java/      # Controllers, services, config
-    ├── src/main/resources/
-    │   ├── modulos.yml     # Módulos fixos
-    │   ├── application.yml
-    │   ├── templates/      # Thymeleaf (HTML)
-    │   └── static/         # CSS e JS
-    └── Dockerfile
+│   ├── INSTALACAO.md           # Clone e Docker
+│   └── ARQUITETURA.md          # Visão técnica
+└── indicadores-crud/           # Aplicação Spring Boot
+    ├── Dockerfile
+    ├── pom.xml
+    └── src/main/
+        ├── java/               # Controllers, services, config
+        └── resources/
+            ├── modulos.yml     # Formulários iniciais
+            ├── templates/      # Thymeleaf (HTML)
+            └── static/         # CSS e JS
 ```
-
-### Stack
-
-| Camada | Tecnologia |
-|--------|------------|
-| Backend | Java 17, Spring Boot 3 |
-| Interface | Thymeleaf, Bootstrap 5, CSS institucional |
-| Banco | PostgreSQL 16 |
-| Deploy | Docker Compose |
 
 ---
 
 ## Segurança
 
-- Não há autenticação na aplicação web.  
-- Proteja o acesso na rede (firewall/VLAN).  
-- Não exponha a porta `5432` na internet sem necessidade.  
-- Mantenha senha forte em `POSTGRES_PASSWORD`.
-#   W E B _ C R U D - - - J a v a _ S p r i n g B o o t - P o s t g r e S Q L - D o c k e r 
- 
- #   W E B - C R U D - J A V A - P o s t g r e S Q L - D o c k e r -  
- 
+> [!WARNING]
+> A aplicação **não possui autenticação**. Restrinja o acesso por firewall/VLAN e não exponha as portas na internet sem necessidade.
+
+| Prática | Motivo |
+|:--------|:-------|
+| Senha forte em `POSTGRES_PASSWORD` | Protege o banco |
+| Não commitar `.env` | Evita vazamento de credenciais |
+| Não expor `5432` publicamente | Acesso direto ao PostgreSQL |
+| Repositório privado no GitHub | Dados operacionais sensíveis |
+
+---
+
+<div align="center">
+
+**PostgreSQL · Grafana · Uso restrito à rede autorizada**
+
+[⬆ Voltar ao topo](#painel-de-indicadores)
+
+</div>
