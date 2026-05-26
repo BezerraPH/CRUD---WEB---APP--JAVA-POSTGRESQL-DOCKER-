@@ -1,0 +1,108 @@
+# Novos indicadores: copie um bloco, altere slug/tabela/campos e crie a tabela no PostgreSQL.
+# O Grafana lê diretamente as tabelas — não precisa alterar código Java.
+
+app:
+  modulos:
+    - slug: dados_indicadores
+      titulo: Indicadores SISGCORP
+      descricao: Várias entradas no mesmo dia são permitidas (identificadas pelo ID). No Grafana use SUM() para acumular.
+      tabela: dados_indicadores
+      coluna-ordem: data_coleta
+      colunas-listagem:
+        - nome: data_coleta
+          label: Data
+        - nome: sisgcorp_pf_pronto_p_analise
+          label: PF Pronto
+        - nome: sisgcorp_pf_em_analise
+          label: PF Análise
+        - nome: sisgcorp_pj_pronto_p_analise
+          label: PJ Pronto
+        - nome: sisgcorp_pj_acima_60
+          label: PJ >60d
+      grupos:
+        - titulo: Data de referência
+          estilo: secondary
+          colunas: 1
+          campos:
+            - nome: data_coleta
+              label: Data da coleta
+              tipo: date
+              obrigatorio: true
+        - titulo: Pessoa Física (PF)
+          estilo: primary
+          colunas: 1
+          campos:
+            - { nome: sisgcorp_pf_pronto_p_analise, label: Pronto p/ análise, tipo: number }
+            - { nome: sisgcorp_pf_em_analise, label: Em análise, tipo: number }
+            - { nome: sisgcorp_pf_restituido, label: Restituído, tipo: number }
+            - { nome: sisgcorp_pf_acima_60, label: Acima 60 dias, tipo: number }
+        - titulo: Pessoa Jurídica (PJ)
+          estilo: success
+          colunas: 1
+          campos:
+            - { nome: sisgcorp_pj_pronto_p_analise, label: Pronto p/ análise, tipo: number }
+            - { nome: sisgcorp_pj_em_analise, label: Em análise, tipo: number }
+            - { nome: sisgcorp_pj_restituido, label: Restituído, tipo: number }
+            - { nome: sisgcorp_pj_acima_60, label: Acima 60 dias, tipo: number }
+
+    - slug: pce_controle_destruicao
+      titulo: Controle de PCE para Destruição
+      descricao: Várias entradas no mesmo dia são permitidas. Saldos atuais são calculados automaticamente; saldo anterior vem do último registro (por data e ID).
+      tabela: pce_controle_destruicao
+      coluna-ordem: infog_data
+      processador: pce
+      colunas-listagem:
+        - nome: infog_data
+          label: Data
+        - nome: origem
+          label: Origem
+        - nome: pcerec_armas
+          label: Rec. armas
+        - nome: saldoatualdearmas
+          label: Saldo armas
+        - nome: saldoatualdemunicoes
+          label: Saldo munições
+      grupos:
+        - titulo: Informações gerais
+          estilo: secondary
+          colunas: 1
+          campos:
+            - { nome: infog_data, label: Data do recebimento, tipo: date, obrigatorio: true }
+            - { nome: infog_omosop, label: OM / OS / OP, tipo: text }
+            - { nome: infog_nrtram, label: Nº TRAM, tipo: text }
+            - { nome: origem, label: Origem, tipo: text }
+        - titulo: PCE recebido
+          estilo: primary
+          colunas: 1
+          campos:
+            - { nome: pcerec_armas, label: Armas, tipo: number }
+            - { nome: pcerec_municao, label: Munição, tipo: number }
+            - { nome: pcerec_outrospce, label: Outros PCE, tipo: number }
+            - { nome: pcerec_carregadores, label: Carregadores, tipo: number }
+        - titulo: Saldos anteriores
+          estilo: info
+          colunas: 1
+          campos:
+            - { nome: saldoanosanteriorarmas, label: Armas ant., tipo: number }
+            - { nome: saldoanosanteriormunicao, label: Muni. ant., tipo: number }
+            - { nome: saldoanosanterioroutrospce, label: Outros ant., tipo: number }
+            - { nome: saldoanosanteriorcarregadores, label: Carreg. ant., tipo: number }
+        - titulo: Saídas / destruição
+          estilo: info
+          colunas: 1
+          campos:
+            - { nome: armasdestruidas, label: Armas destruídas, tipo: number }
+            - { nome: municaodestruidas, label: Munição destruída, tipo: number }
+            - { nome: outrospcedestruidos, label: Outros destruídos, tipo: number }
+            - { nome: carregadoresdestruidos, label: Carreg. destruídos, tipo: number }
+            - { nome: armasdajusticasemordemdedestruicao, label: Armas justiça s/ ordem, tipo: number }
+            - { nome: armasbrasonadas, label: Armas brasonadas, tipo: number }
+            - { nome: armasrestituidas, label: Armas restituídas, tipo: number }
+        - titulo: Saldos atuais (calculados)
+          estilo: success
+          colunas: 1
+          campos:
+            - { nome: saldoatualdearmas, label: Saldo atual de armas, tipo: number }
+            - { nome: saldoatualdemunicoes, label: Saldo atual de munições, tipo: number }
+            - { nome: saldoatualoutrospce, label: Saldo atual outros PCE, tipo: number }
+            - { nome: saldoatualcorregadores, label: Saldo atual carregadores, tipo: number }

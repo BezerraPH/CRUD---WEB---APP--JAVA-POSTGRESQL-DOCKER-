@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <nav aria-label="Navegação" class="mb-2">
+        <ol class="breadcrumb breadcrumb-app mb-0">
+            <li class="breadcrumb-item"><a th:href="@{/}">Início</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/formularios}">Formulários</a></li>
+            <li class="breadcrumb-item active" th:text="${modulo.titulo}">Editar</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">Editar formulário</h1>
+            <p class="page-subtitle mb-0" th:text="${modulo.titulo}">Título</p>
+        </div>
+        <div class="action-bar">
+            <a th:href="@{/formularios/calculos/{slug}(slug=${modulo.slug})}" class="btn btn-app-outline">Fórmulas</a>
+            <a th:href="@{/m/{slug}(slug=${modulo.slug})}" class="btn btn-app-primary">Preencher dados →</a>
+        </div>
+    </div>
+
+    <div class="page-editar-grid">
+        <div>
+            <div class="card-app">
+                <div class="card-header header-sage">Informações do formulário</div>
+                <div class="card-body p-4">
+                    <form th:action="@{/formularios/{slug}/atualizar(slug=${modulo.slug})}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label-app">Título</label>
+                            <input type="text" name="titulo" class="form-control form-control-app" required
+                                   th:value="${modulo.titulo}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label-app">Descrição</label>
+                            <input type="text" name="descricao" class="form-control form-control-app"
+                                   th:value="${modulo.descricao}">
+                        </div>
+                        <button type="submit" class="btn btn-app-primary w-100">Salvar alterações</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="danger-zone p-4 mt-4">
+                <h3 class="h6 fw-bold text-danger mb-2">Excluir formulário</h3>
+                <p class="small text-muted mb-3">
+                    Remove a configuração e apaga a tabela <code th:text="${modulo.tabela}">tabela</code>
+                    com todos os dados. Ação irreversível.
+                </p>
+                <form th:action="@{/formularios/{slug}/excluir(slug=${modulo.slug})}" method="post"
+                      data-confirm="Tem certeza? Todos os dados deste formulário serão apagados permanentemente.">
+                    <button type="submit" class="btn btn-app-danger w-100">Excluir formulário</button>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <div class="card-app mb-4">
+                <div class="card-header header-blue">Campos atuais</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3"
+                        th:each="c : ${modulo.todosCampos()}">
+                        <span>
+                            <strong th:text="${c.label}">Label</strong>
+                            <span class="text-muted small ms-2" th:text="|(${c.nome})|">nome</span>
+                        </span>
+                        <span class="badge rounded-pill badge-personalizado"
+                              th:text="${c.tipo == 'date' ? 'Data' : (c.tipo == 'number' ? 'Número' : 'Texto')}">tipo</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-app">
+                <div class="card-header header-mint">Adicionar novo campo</div>
+                <div class="card-body p-4">
+                    <form th:action="@{/formularios/{slug}/adicionar-campo(slug=${modulo.slug})}" method="post"
+                          class="form-stack">
+                        <div class="form-field-stack">
+                            <label class="form-label-app">Nome exibido</label>
+                            <input type="text" name="label" class="form-control form-control-app" required
+                                   placeholder="Ex.: Observação">
+                        </div>
+                        <div class="form-field-stack">
+                            <label class="form-label-app">Nome técnico</label>
+                            <input type="text" name="nome" class="form-control form-control-app font-monospace"
+                                   placeholder="opcional">
+                        </div>
+                        <div class="form-field-stack">
+                            <label class="form-label-app">Tipo</label>
+                            <select name="tipo" class="form-select form-select-app">
+                                <option value="number">Número</option>
+                                <option value="date">Data</option>
+                                <option value="text">Texto</option>
+                            </select>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="obrigatorio" value="true" class="form-check-input" id="obr">
+                            <label class="form-check-label" for="obr">Campo obrigatório</label>
+                        </div>
+                        <button type="submit" class="btn btn-app-primary w-100">Adicionar campo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a th:href="@{/formularios}" class="btn btn-app-secondary">← Voltar à lista</a>
+    </div>
+</th:block>
+</html>

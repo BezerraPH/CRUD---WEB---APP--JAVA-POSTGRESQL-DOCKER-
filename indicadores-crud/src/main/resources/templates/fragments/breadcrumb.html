@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="breadcrumb(items)" aria-label="Navegação" class="mb-3">
+    <ol class="breadcrumb breadcrumb-app mb-0">
+        <li class="breadcrumb-item">
+            <a th:href="@{/}">Início</a>
+        </li>
+        <th:block th:each="item, stat : ${items}">
+            <li class="breadcrumb-item" th:if="${item.url != null}">
+                <a th:href="${item.url}" th:text="${item.label}">Link</a>
+            </li>
+            <li class="breadcrumb-item active" th:if="${item.url == null}" th:text="${item.label}">Atual</li>
+        </th:block>
+    </ol>
+</nav>
+</body>
+</html>

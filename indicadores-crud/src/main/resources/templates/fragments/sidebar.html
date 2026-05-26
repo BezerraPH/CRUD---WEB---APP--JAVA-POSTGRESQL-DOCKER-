@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="sidebar" class="app-sidebar" id="app-sidebar" aria-label="Menu principal">
+    <nav class="sidebar-nav">
+        <p class="sidebar-label">Navegação</p>
+        <a th:href="@{/}" class="sidebar-link" th:classappend="${paginaAtiva == 'inicio'} ? ' active' : ''">
+            Início
+        </a>
+        <a th:href="@{/formularios}" class="sidebar-link" th:classappend="${paginaAtiva == 'formularios'} ? ' active' : ''">
+            Todos os formulários
+        </a>
+        <a th:href="@{/formularios/novo}" class="sidebar-link" th:classappend="${paginaAtiva == 'novo'} ? ' active' : ''">
+            + Criar formulário
+        </a>
+
+        <p class="sidebar-label mt-4" th:if="${!#lists.isEmpty(menuModulos)}">Acesso rápido</p>
+        <a th:each="m : ${menuModulos}"
+           th:href="@{/m/{slug}(slug=${m.slug})}"
+           class="sidebar-link sidebar-link--small"
+           th:classappend="${modulo != null and modulo.slug == m.slug} ? ' active' : ''"
+           th:text="${m.titulo}">Formulário</a>
+    </nav>
+    <div class="sidebar-footer">
+        <span class="small text-muted">PostgreSQL → Grafana</span>
+    </div>
+</aside>
+</body>
+</html>

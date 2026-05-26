@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <div class="home-hero animate-fade-in">
+        <h1>Painel de Indicadores</h1>
+        <p class="page-subtitle mb-0 mx-auto home-subtitle animate-fade-in delay-1">
+            Sistema para lançamento de dados operacionais. Os registros ficam no PostgreSQL e alimentam os painéis do Grafana.
+        </p>
+    </div>
+
+    <div class="home-actions">
+        <a th:href="@{/formularios}" class="home-card acessar">
+            <div class="home-card-icon" aria-hidden="true">1</div>
+            <h2>Acessar formulários</h2>
+            <p>Ver formulários, preencher lançamentos, editar campos, configurar fórmulas ou excluir o que não usar mais.</p>
+        </a>
+
+        <a th:href="@{/formularios/novo}" class="home-card criar">
+            <div class="home-card-icon" aria-hidden="true">2</div>
+            <h2>Criar formulário novo</h2>
+            <p>Montar um novo indicador (ex.: veículos blindados, produtos químicos) sem alterar código.</p>
+        </a>
+    </div>
+</th:block>
+</html>

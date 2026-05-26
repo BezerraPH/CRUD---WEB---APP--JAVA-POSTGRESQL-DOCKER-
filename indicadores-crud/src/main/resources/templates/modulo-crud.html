@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <nav aria-label="Navegação" class="animate-fade-in">
+        <ol class="breadcrumb breadcrumb-app mb-0">
+            <li class="breadcrumb-item"><a th:href="@{/}">Início</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/formularios}">Formulários</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${modulo.titulo}">Formulário</li>
+        </ol>
+    </nav>
+
+    <header class="page-header-row animate-fade-in delay-1">
+        <div>
+            <h1 class="page-title" th:text="${modulo.titulo}">Módulo</h1>
+            <p class="page-subtitle mb-0" th:if="${modulo.descricao != null and !#strings.isEmpty(modulo.descricao)}"
+               th:text="${modulo.descricao}">Descrição</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge badge-tipo badge-sistema" th:if="${suportaCalculos != null and calculosAtivos}">
+                Cálculo automático ativo
+            </span>
+            <span class="badge badge-tipo badge-personalizado" th:if="${suportaCalculos != null and !calculosAtivos}">
+                Cálculo manual
+            </span>
+            <a th:href="@{/formularios/calculos/{slug}(slug=${modulo.slug})}"
+               class="btn btn-app-outline btn-sm">Fórmulas</a>
+        </div>
+    </header>
+
+    <div th:if="${ultimoRegistro != null and editReg == null and modulo.processador == 'pce'}"
+         class="alert alert-app-info mb-4 animate-fade-in delay-2" role="status">
+        <strong>Último lançamento PCE</strong> em <span th:text="${ultimoRegistro['infog_data']}">data</span> —
+        saldo armas <strong th:text="${ultimoRegistro['saldoatualdearmas']}">0</strong>,
+        munições <strong th:text="${ultimoRegistro['saldoatualdemunicoes']}">0</strong>.
+        Saldos anteriores podem ser preenchidos automaticamente se deixar em branco.
+    </div>
+
+    <div class="desktop-split animate-fade-in delay-2">
+        <section class="desktop-split__form card-app p-4" aria-labelledby="titulo-lancamento">
+            <h2 id="titulo-lancamento" class="h5 fw-semibold mb-4"
+                th:text="${editReg != null ? 'Editar registro' : 'Novo lançamento'}">Novo lançamento</h2>
+
+            <form th:action="@{/m/{slug}/salvar(slug=${modulo.slug})}" method="post" class="form-stack" id="form-lancamento">
+                <input type="hidden" name="id" th:if="${editReg != null}" th:value="${editReg['id']}">
+
+                <th:block th:each="grupo, gStat : ${modulo.grupos}">
+                    <div class="form-section" th:classappend="${gStat.index > 0} ? ' mt-4 pt-3 border-top' : ''">
+                        <h3 class="form-section-title" th:text="${grupo.titulo}">Grupo</h3>
+                        <div th:each="campo : ${grupo.campos}" class="form-field-stack"
+                             th:unless="${campo.ocultoFormulario}">
+                            <label class="form-label-app"
+                                   th:for="${'campo-' + modulo.slug + '-' + campo.nome}"
+                                   th:text="${campo.label + (campo.obrigatorio ? ' *' : '') + (camposCalculados != null and #sets.contains(camposCalculados, campo.nome) ? ' (calculado)' : '')}">Campo</label>
+                            <input th:if="${campo.tipo == 'date'}" type="date"
+                                   class="form-control form-control-app"
+                                   th:id="${'campo-' + modulo.slug + '-' + campo.nome}"
+                                   th:name="${campo.nome}" th:required="${campo.obrigatorio}"
+                                   th:aria-required="${campo.obrigatorio}"
+                                   th:value="${editReg != null ? editReg[campo.nome] : ''}">
+                            <input th:if="${campo.tipo == 'number'}" type="number" step="any"
+                                   class="form-control form-control-app"
+                                   th:classappend="${camposCalculados != null and #sets.contains(camposCalculados, campo.nome)} ? ' bg-light' : ''"
+                                   th:id="${'campo-' + modulo.slug + '-' + campo.nome}"
+                                   th:name="${campo.nome}"
+                                   th:required="${campo.obrigatorio and !(camposCalculados != null and #sets.contains(camposCalculados, campo.nome))}"
+                                   th:readonly="${camposCalculados != null and #sets.contains(camposCalculados, campo.nome)}"
+                                   th:aria-required="${campo.obrigatorio}"
+                                   th:value="${editReg != null ? editReg[campo.nome] : (ultimoRegistro != null and campo.nome == 'saldoanosanteriorarmas' ? ultimoRegistro['saldoatualdearmas'] : (ultimoRegistro != null and campo.nome == 'saldoanosanteriormunicao' ? ultimoRegistro['saldoatualdemunicoes'] : (ultimoRegistro != null and campo.nome == 'saldoanosanterioroutrospce' ? ultimoRegistro['saldoatualoutrospce'] : (ultimoRegistro != null and campo.nome == 'saldoanosanteriorcarregadores' ? ultimoRegistro['saldoatualcorregadores'] : ''))))}">
+                            <input th:if="${campo.tipo != 'date' and campo.tipo != 'number'}" type="text"
+                                   class="form-control form-control-app"
+                                   th:id="${'campo-' + modulo.slug + '-' + campo.nome}"
+                                   th:name="${campo.nome}"
+                                   th:required="${campo.obrigatorio}"
+                                   th:aria-required="${campo.obrigatorio}"
+                                   th:value="${editReg != null ? editReg[campo.nome] : ''}">
+                        </div>
+                    </div>
+                </th:block>
+
+                <div class="form-actions-stack">
+                    <a th:if="${editReg != null}" th:href="@{/m/{slug}(slug=${modulo.slug})}"
+                       class="btn btn-app-secondary btn-lg-stack">Cancelar</a>
+                    <button type="submit" class="btn btn-app-primary btn-lg-stack"
+                            th:text="${editReg != null ? 'Atualizar registro' : 'Gravar lançamento'}">Gravar</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="desktop-split__table card-app" aria-labelledby="titulo-registros">
+            <div class="card-header header-sand d-flex justify-content-between align-items-center">
+                <span id="titulo-registros">Registros gravados</span>
+                <span class="badge-count" th:text="${#lists.size(registros)}">0</span>
+            </div>
+            <div class="table-responsive table-scroll">
+                <table class="table table-app table-hover align-middle m-0 mb-0">
+                    <caption class="visually-hidden">Lista de lançamentos do indicador</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col" th:each="col : ${modulo.colunasListagem}" th:text="${col.label}">Col</th>
+                        <th scope="col" class="text-end col-acoes">Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="reg : ${registros}">
+                        <td th:each="col : ${modulo.colunasListagem}" th:text="${reg[col.nome]}">—</td>
+                        <td class="text-end text-nowrap col-acoes">
+                            <a th:href="@{/m/{slug}/editar/{id}(slug=${modulo.slug}, id=${reg['id']})}"
+                               class="btn btn-sm btn-app-secondary">Editar</a>
+                            <form th:action="@{/m/{slug}/excluir/{id}(slug=${modulo.slug}, id=${reg['id']})}"
+                                  method="post" class="d-inline"
+                                  data-confirm="Excluir este registro permanentemente?">
+                                <button type="submit" class="btn btn-sm btn-app-danger">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(registros)}">
+                        <td th:colspan="${#lists.size(modulo.colunasListagem) + 1}" class="text-muted text-center py-5">
+                            Nenhum registro ainda. Preencha o formulário acima para gravar o primeiro lançamento.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</th:block>
+</html>

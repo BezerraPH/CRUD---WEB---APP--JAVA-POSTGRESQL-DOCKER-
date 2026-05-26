@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <nav aria-label="Navegação" class="mb-2">
+        <ol class="breadcrumb breadcrumb-app mb-0">
+            <li class="breadcrumb-item"><a th:href="@{/}">Início</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/formularios}">Formulários</a></li>
+            <li class="breadcrumb-item active">Criar novo</li>
+        </ol>
+    </nav>
+
+    <h1 class="page-title">Criar formulário novo</h1>
+    <p class="page-subtitle">
+        Preencha as informações abaixo. O sistema cria automaticamente a tabela no banco de dados
+        para uso no Grafana.
+    </p>
+
+    <form th:action="@{/formularios/criar}" method="post" class="card-app p-4 p-md-5 animate-fade-in delay-2 page-criar-grid" id="form-novo">
+        <section class="mb-0">
+            <h2 class="h5 fw-bold mb-3">
+                <span class="section-step">1</span> Informações gerais
+            </h2>
+            <div class="form-stack">
+                <div class="form-field-stack">
+                    <label class="form-label-app">Nome do indicador *</label>
+                    <input type="text" name="titulo" id="titulo" class="form-control form-control-app" required
+                           placeholder="Ex.: Veículos blindados">
+                </div>
+                <div class="form-field-stack">
+                    <label class="form-label-app">Descrição (texto de ajuda)</label>
+                    <input type="text" name="descricao" class="form-control form-control-app"
+                           placeholder="Ex.: Lançamento diário de veículos recebidos">
+                </div>
+                <div class="form-field-stack">
+                    <label class="form-label-app">Identificador interno</label>
+                    <input type="text" name="slug" id="slug" class="form-control form-control-app font-monospace"
+                           placeholder="gerado automaticamente">
+                    <div class="form-text text-muted small">Opcional. Apenas letras minúsculas e _</div>
+                </div>
+                <div class="form-field-stack">
+                    <label class="form-label-app">Nome da tabela (banco)</label>
+                    <input type="text" name="tabela" id="tabela" class="form-control form-control-app font-monospace"
+                           placeholder="igual ao identificador">
+                </div>
+                <div class="form-field-stack">
+                    <label class="form-label-app">Ordenar registros por (coluna de data)</label>
+                    <select name="colunaOrdem" id="colunaOrdem" class="form-select form-select-app">
+                        <option value="">Primeira coluna de data</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-4">
+            <h2 class="h5 fw-bold mb-2">
+                <span class="section-step">2</span> Campos do formulário
+            </h2>
+            <p class="text-muted small mb-3">
+                Inclua pelo menos um campo do tipo <strong>Data</strong>. Use <strong>Número</strong> para quantidades e <strong>Texto</strong> para observações.
+            </p>
+            <div id="lista-campos"></div>
+            <button type="button" class="btn btn-app-outline btn-sm" id="btn-add-campo">+ Adicionar campo</button>
+        </section>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-end pt-3 border-top">
+            <a th:href="@{/formularios}" class="btn btn-app-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-app-primary px-4">Criar formulário</button>
+        </div>
+    </form>
+
+    <template id="tpl-campo">
+        <div class="field-row-card linha-campo">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-muted">Campo</span>
+                <button type="button" class="btn btn-app-danger btn-sm btn-remover" title="Remover campo">Remover</button>
+            </div>
+            <div class="form-field-stack mb-2">
+                <label class="form-label-app">Nome exibido *</label>
+                <input type="text" name="campoLabel" class="form-control form-control-app" required
+                       placeholder="Ex.: Data da coleta">
+            </div>
+            <div class="form-field-stack mb-2">
+                <label class="form-label-app">Nome técnico (opcional)</label>
+                <input type="text" name="campoNome" class="form-control form-control-app font-monospace campo-nome"
+                       placeholder="Ex.: data_coleta">
+            </div>
+            <div class="form-field-stack mb-2">
+                <label class="form-label-app">Tipo</label>
+                <select name="campoTipo" class="form-select form-select-app campo-tipo">
+                    <option value="date">Data</option>
+                    <option value="number" selected>Número</option>
+                    <option value="text">Texto</option>
+                </select>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" name="campoObrigatorio" class="form-check-input campo-obr" value="0">
+                <label class="form-check-label">Campo obrigatório</label>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        (function () {
+            const lista = document.getElementById('lista-campos');
+            const tpl = document.getElementById('tpl-campo');
+            const colunaOrdem = document.getElementById('colunaOrdem');
+            const titulo = document.getElementById('titulo');
+            const slug = document.getElementById('slug');
+            const tabela = document.getElementById('tabela');
+
+            function slugify(t) {
+                return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 60);
+            }
+
+            function atualizarColunaOrdem() {
+                const atual = colunaOrdem.value;
+                colunaOrdem.innerHTML = '<option value="">Primeira coluna de data</option>';
+                lista.querySelectorAll('.linha-campo').forEach((linha, i) => {
+                    const nome = linha.querySelector('.campo-nome').value.trim()
+                        || slugify(linha.querySelector('[name=campoLabel]').value) || ('campo_' + (i + 1));
+                    const tipo = linha.querySelector('.campo-tipo').value;
+                    const label = linha.querySelector('[name=campoLabel]').value || nome;
+                    if (tipo === 'date') {
+                        const opt = document.createElement('option');
+                        opt.value = nome;
+                        opt.textContent = label;
+                        colunaOrdem.appendChild(opt);
+                    }
+                    linha.querySelector('.campo-obr').value = String(i);
+                });
+                if (atual) colunaOrdem.value = atual;
+            }
+
+            function addLinha(preset) {
+                const node = tpl.content.cloneNode(true);
+                const linha = node.querySelector('.linha-campo');
+                lista.appendChild(linha);
+                if (preset) {
+                    linha.querySelector('[name=campoLabel]').value = preset.label || '';
+                    linha.querySelector('.campo-nome').value = preset.nome || '';
+                    linha.querySelector('.campo-tipo').value = preset.tipo || 'number';
+                }
+                linha.querySelector('.btn-remover').addEventListener('click', () => {
+                    if (lista.querySelectorAll('.linha-campo').length > 1) {
+                        linha.remove();
+                        atualizarColunaOrdem();
+                    }
+                });
+                linha.querySelectorAll('input, select').forEach(el => el.addEventListener('input', atualizarColunaOrdem));
+                linha.querySelector('.campo-tipo').addEventListener('change', atualizarColunaOrdem);
+                atualizarColunaOrdem();
+            }
+
+            document.getElementById('btn-add-campo').addEventListener('click', () => addLinha());
+            titulo.addEventListener('input', () => {
+                if (!slug.dataset.manual) slug.value = slugify(titulo.value);
+                if (!tabela.dataset.manual) tabela.value = slug.value;
+            });
+            slug.addEventListener('input', () => slug.dataset.manual = '1');
+            tabela.addEventListener('input', () => tabela.dataset.manual = '1');
+
+            addLinha({ label: 'Data da coleta', nome: 'data_coleta', tipo: 'date' });
+            addLinha({ label: 'Quantidade', nome: 'quantidade', tipo: 'number' });
+        })();
+    </script>
+</th:block>
+</html>

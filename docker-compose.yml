@@ -1,0 +1,55 @@
+# Orquestração: PostgreSQL (dados), app Java (CRUD web) e Adminer (consulta SQL).
+# Na primeira subida, sql/schema.sql cria tabelas base via docker-entrypoint-initdb.d.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: indicadores-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-indicadores}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-indicadores}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  indicadores-app:
+    build: ./indicadores-crud
+    container_name: indicadores-crud
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    env_file:
+      - .env
+    # Mesmas variáveis do serviço postgres (evita divergência entre .env e volume antigo)
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-indicadores}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  adminer:
+    image: adminer:4
+    container_name: indicadores-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

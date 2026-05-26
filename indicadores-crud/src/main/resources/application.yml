@@ -1,0 +1,20 @@
+# Configuração Spring Boot: datasource via variáveis de ambiente (.env / Docker).
+# Módulos fixos (SISGCORP, PCE) vêm de modulos.yml (import abaixo).
+spring:
+  application:
+    name: indicadores-crud
+  config:
+    import: classpath:modulos.yml
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:indicadores}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:}
+  thymeleaf:
+    cache: false
+
+server:
+  port: ${APP_PORT:8080}
+
+logging:
+  level:
+    org.springframework.jdbc: WARN

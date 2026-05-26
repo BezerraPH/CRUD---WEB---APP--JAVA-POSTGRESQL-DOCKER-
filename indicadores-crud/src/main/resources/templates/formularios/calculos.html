@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <nav aria-label="Navegação" class="mb-2">
+        <ol class="breadcrumb breadcrumb-app mb-0">
+            <li class="breadcrumb-item"><a th:href="@{/}">Início</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/formularios}">Formulários</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/m/{slug}(slug=${modulo.slug})}" th:text="${modulo.titulo}">Módulo</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Fórmulas</li>
+        </ol>
+    </nav>
+
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-title mb-1">Fórmulas de cálculo</h1>
+            <p class="page-subtitle mb-0" th:text="${modulo.titulo}">Módulo</p>
+        </div>
+        <a th:href="@{/m/{slug}(slug=${modulo.slug})}" class="btn btn-app-secondary">← Voltar ao lançamento</a>
+    </div>
+
+    <div class="alert alert-app-info mb-4">
+        Use nomes de <strong>campos numéricos</strong> na fórmula (ex.: <code>campo_a + campo_b - campo_c</code>),
+        operadores <code>+ - * /</code> e parênteses. O campo destino fica somente leitura no formulário
+        enquanto a regra estiver ativa e os cálculos automáticos ligados.
+    </div>
+
+    <form th:action="@{/formularios/calculos/{slug}/salvar(slug=${modulo.slug})}" method="post" class="card-app p-4" id="form-calculos">
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="calculosAtivos" id="calculosAtivos"
+                           value="true" th:checked="${config.calculosAtivos}">
+                    <label class="form-check-label fw-semibold" for="calculosAtivos">
+                        Cálculos automáticos ativos
+                    </label>
+                </div>
+                <p class="small text-muted mt-1 mb-0">Desmarque para preencher todos os campos manualmente.</p>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="herdarSaldoAnterior" id="herdarSaldoAnterior"
+                           value="true" th:checked="${config.herdarSaldoAnterior}">
+                    <label class="form-check-label fw-semibold" for="herdarSaldoAnterior">
+                        Herdar valores do último registro (PCE)
+                    </label>
+                </div>
+                <p class="small text-muted mt-1 mb-0">Aplica apenas ao módulo PCE, quando configurado.</p>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h6 fw-semibold mb-0">Regras por campo</h2>
+            <button type="button" class="btn btn-app-outline btn-sm" id="btn-add-regra">+ Adicionar regra</button>
+        </div>
+
+        <div class="table-responsive mb-3">
+            <table class="table table-app align-middle">
+                <thead>
+                <tr>
+                    <th>Ativo</th>
+                    <th>Campo destino</th>
+                    <th>Rótulo</th>
+                    <th>Expressão</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="regras-body">
+                <tr th:each="regra, stat : ${config.regras}" class="regra-row">
+                    <td>
+                        <input type="checkbox" name="ativo" th:value="${stat.index}" th:checked="${regra.ativo}">
+                    </td>
+                    <td>
+                        <select name="campoDestino" class="form-select form-control-app" required>
+                            <option value="" disabled>Selecione…</option>
+                            <option th:each="c : ${camposDisponiveis}"
+                                    th:value="${c.nome}"
+                                    th:text="${c.nome + ' — ' + c.label}"
+                                    th:selected="${c.nome == regra.campoDestino}"></option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" name="label" class="form-control form-control-app"
+                               th:value="${regra.label}">
+                    </td>
+                    <td>
+                        <input type="text" name="expressao" class="form-control form-control-app font-monospace"
+                               th:value="${regra.expressao}" placeholder="campo_a + campo_b" style="min-width: 240px;">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-regra" title="Remover">×</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <template id="regra-row-template">
+            <tr class="regra-row">
+                <td><input type="checkbox" name="ativo" value="0" checked></td>
+                <td>
+                    <select name="campoDestino" class="form-select form-control-app" required>
+                        <option value="" disabled selected>Selecione…</option>
+                        <option th:each="c : ${camposDisponiveis}"
+                                th:value="${c.nome}"
+                                th:text="${c.nome + ' — ' + c.label}"></option>
+                    </select>
+                </td>
+                <td><input type="text" name="label" class="form-control form-control-app"></td>
+                <td><input type="text" name="expressao" class="form-control form-control-app font-monospace"
+                           placeholder="campo_a + campo_b" style="min-width: 240px;"></td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-regra" title="Remover">×</button></td>
+            </tr>
+        </template>
+
+        <details class="mb-4">
+            <summary class="fw-semibold mb-2" style="cursor:pointer">Campos numéricos disponíveis</summary>
+            <ul class="small text-muted mb-0">
+                <li th:each="c : ${camposDisponiveis}">
+                    <code th:text="${c.nome}">campo</code> — <span th:text="${c.label}">label</span>
+                </li>
+            </ul>
+        </details>
+
+        <div class="form-actions-stack">
+            <button type="submit" class="btn btn-app-primary btn-lg-stack">Salvar fórmulas</button>
+        </div>
+    </form>
+
+    <form th:if="${temPadraoPce}"
+          th:action="@{/formularios/calculos/{slug}/restaurar-padrao(slug=${modulo.slug})}" method="post"
+          class="mt-3"
+          data-confirm="Restaurar as fórmulas padrão do PCE? As personalizações serão perdidas.">
+        <button type="submit" class="btn btn-app-outline">Restaurar fórmulas padrão PCE</button>
+    </form>
+
+    <script th:inline="javascript">
+        (function () {
+            var body = document.getElementById('regras-body');
+            var tpl = document.getElementById('regra-row-template');
+            var btnAdd = document.getElementById('btn-add-regra');
+            if (!body || !tpl || !btnAdd) return;
+
+            function reindexar() {
+                body.querySelectorAll('.regra-row').forEach(function (row, i) {
+                    var chk = row.querySelector('input[name="ativo"]');
+                    if (chk) chk.value = String(i);
+                });
+            }
+
+            function bindRemove(row) {
+                var btn = row.querySelector('.btn-remove-regra');
+                if (btn) {
+                    btn.addEventListener('click', function () {
+                        row.remove();
+                        reindexar();
+                    });
+                }
+            }
+
+            btnAdd.addEventListener('click', function () {
+                var row = tpl.content.firstElementChild.cloneNode(true);
+                body.appendChild(row);
+                reindexar();
+                bindRemove(row);
+            });
+
+            body.querySelectorAll('.regra-row').forEach(bindRemove);
+            reindexar();
+        })();
+    </script>
+</th:block>
+</html>

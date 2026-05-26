@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::content})}">
+<th:block th:fragment="content">
+    <nav aria-label="Navegação" class="animate-fade-in">
+        <ol class="breadcrumb breadcrumb-app mb-0">
+            <li class="breadcrumb-item"><a th:href="@{/}">Início</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Formulários</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 animate-fade-in delay-1">
+        <div>
+            <h1 class="page-title mb-1">Formulários</h1>
+            <p class="page-subtitle mb-0">
+                Preencha dados, edite campos, configure fórmulas ou exclua formulários que não usar mais.
+            </p>
+        </div>
+        <a th:href="@{/formularios/novo}" class="btn btn-app-primary btn-lg-stack">+ Novo formulário</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(formularios)}" class="empty-state mb-4 animate-fade-in delay-2">
+        <p class="mb-0">Nenhum formulário disponível.</p>
+        <a th:href="@{/formularios/novo}" class="btn btn-app-primary mt-3">Criar formulário</a>
+    </div>
+
+    <div class="forms-grid mb-4" th:if="${!#lists.isEmpty(formularios)}">
+        <div th:each="m : ${formularios}" class="form-list-item animate-fade-in delay-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1">
+                    <h3 th:text="${m.titulo}">Título</h3>
+                    <p class="text-muted mb-0" th:if="${m.descricao != null and !#strings.isEmpty(m.descricao)}"
+                       th:text="${m.descricao}">Descrição</p>
+                </div>
+                <div class="action-bar">
+                    <a th:href="@{/m/{slug}(slug=${m.slug})}" class="btn btn-app-primary">
+                        Preencher
+                    </a>
+                    <a th:href="@{/formularios/calculos/{slug}(slug=${m.slug})}" class="btn btn-app-outline">
+                        Fórmulas
+                    </a>
+                    <a th:href="@{/formularios/{slug}/editar(slug=${m.slug})}" class="btn btn-app-secondary">
+                        Editar
+                    </a>
+                    <form th:action="@{/formularios/{slug}/excluir(slug=${m.slug})}" method="post" class="d-inline"
+                          th:attr="data-confirm=${'Excluir o formulário “' + m.titulo + '” e TODOS os dados gravados? Esta ação não pode ser desfeita.'}">
+                        <button type="submit" class="btn btn-app-danger">Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 animate-fade-in delay-3">
+        <a th:href="@{/}" class="btn btn-app-secondary">← Voltar ao início</a>
+    </div>
+</th:block>
+</html>
